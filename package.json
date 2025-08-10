@@ -1,0 +1,10 @@
+{
+  "name": "zk-app",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "echo 'add your linter here' && exit 0"
+  }
+}

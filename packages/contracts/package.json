@@ -1,0 +1,10 @@
+{
+  "name": "@zk-app/contracts",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "anvil": "anvil -p 8545",
+    "build": "forge build",
+    "test": "vitest run"
+  }
+}

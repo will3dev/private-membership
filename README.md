@@ -1,66 +1,14 @@
-## Foundry
+## Application Overview
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+This application is designed to operate as a privacy-preserving membership and rewards protocol.
 
-Foundry consists of:
+Businesses could employ this protocol as a way of privately registering users for their platform and allowing users to claim loyalty and reward points overtime as a result of being long-standing members.
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+All of the memberships are private as well as the tracking of membership reward balances. These will be incremented using additive properties of elGamal and validated using poseidon encryption. Similar to eERC.
 
-## Documentation
+The mechanism for generating points will be simple. It will be time-based using block timestamp. 
 
-https://book.getfoundry.sh/
+There are two merkle trees being used:
 
-## Usage
-
-### Build
-
-```shell
-$ forge build
-```
-
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+- **Membership Tree**: An append tree that will be used to track memberships of users subscribing to the platform. 
+- **Points Tree**: A sparse merkle tree tracking the encrypted balances of the users after they decide to claim points.
