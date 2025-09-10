@@ -166,14 +166,14 @@ abstract contract AppendMerkleTree {
     /**
      * @dev This function is used to get the leaves of the merkle tree.
      */
-    function getLeaves() public view returns (bytes32[] memory) {
+    function _getLeaves() internal virtual view returns (bytes32[] memory) {
         return leaves;
     }
 
     /**
      * @dev This function is used to get the number of leaves in the merkle tree.
      */
-    function getLeafCount() public view returns (uint256) {
+    function _getLeafCount() internal virtual view returns (uint256) {
         return leafCount;
     }
 

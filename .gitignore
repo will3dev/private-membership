@@ -7,3 +7,6 @@ build
 powersOfTau
 packages/circuits/build/*.zkey
 packages/circuits/build/*.wasm
+sdk/test/random.ts
+
+packages/circuits/Notes.txt

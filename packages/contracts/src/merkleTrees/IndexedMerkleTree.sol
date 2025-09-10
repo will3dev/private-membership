@@ -10,13 +10,14 @@ abstract contract IndexedMerkleTree {
     
     bytes32[] internal leaves;
     uint256 internal leafCount;
-    mapping(bytes32 leaf => bool) internal leafLookup;
+    mapping(bytes32 leaf => bool isValidLeaf) internal leafLookup;
     mapping(bytes32 leaf => uint256 leafPosition) internal leafPositionLookup;
     mapping(bytes32 merkleRoot => bool isValidRoot) internal merkleRootLookup;
     
     error LeafExists();
     error RootDoesNotExist();
     error LeafDoesNotExist();
+    error InvalidLeafPosition();
 
     constructor() {
         _initializeMerkleTree();
@@ -42,6 +43,22 @@ abstract contract IndexedMerkleTree {
      * It is used to perform any necessary checks after adding a leaf.
      */
     function _afterAddLeaf(bytes32 leaf) internal virtual {}
+
+    /**
+     * @dev This function is a hook used to handle pre-leaf updates in the inheriting contract
+     * @param leafPosition the position of the leaf being updated
+     * @param currentLeaf the CURRENT leaf value that is being changed
+     * @param newLeaf the NEW leaf value that is being added
+     */
+    function _beforeUpdateLeaf(uint256 leafPosition, bytes32 currentLeaf, bytes32 newLeaf) internal virtual {}
+
+    /**
+     * @dev This function is a hook used to handle post leaf updates in the inheriting contract
+     * @param leafPosition the position of the leaf being updated
+     * @param currentLeaf the CURRENT leaf value that is being changed
+     * @param newLeaf the NEW leaf value that is being added
+     */
+    function _afterUpdateLeaf(uint256 leafPosition, bytes32 currentLeaf, bytes32 newLeaf) internal virtual {}
 
     /**
      * @dev This function is used to add a leaf to the merkle tree.
@@ -96,9 +113,15 @@ abstract contract IndexedMerkleTree {
 
         // invalidate the current leaf value 
         leafLookup[currentLeaf] = false;
-
+        
+        /* 
+        TODO: Determine if this is necessary.
+        If the currentLeaf status is being set to false it may not be necessary to invalidate the position.
+        Invalidating the position would entail defining a position that is deemed the "invalid" position. Making
+        it unused for any valid leaves.
+        */
         // invalidate the position for currentLeaf
-        leafPositionLookup[currentLeaf] = 0;
+        //leafPositionLookup[currentLeaf] = 0;
 
         // set the position in the leaves array to match the newLeaf
         leaves[leafPosition] = newLeaf;
@@ -252,3 +275,4 @@ abstract contract IndexedMerkleTree {
 
         return height;
     }
+}
