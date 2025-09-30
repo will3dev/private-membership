@@ -1,9 +1,10 @@
 pragma solidity ^0.8.0;
 
 import { AppendMerkleTree } from "./merkleTrees/AppendMerkleTree.sol";
-import { MerkleProof, PointsBalance, NewMembershipProof, EGCT, Point } from "./types/EncryptedMembershipTypes.sol";
+import { MerkleProof, PointsBalance, NewMembershipProof, EGCT, Point, MembershipProof } from "./types/EncryptedMembershipTypes.sol";
 import { IEncryptedLoyaltyPoints } from "./interfaces/IEncryptedLoyaltyPoints.sol";
 import { INewMembershipVerifier } from "./interfaces/verifiers/INewMembershipVerifier.sol";
+import { IMembershipVerifier } from "./interfaces/verifiers/IMembershipVerifier.sol";
 import { BabyJubJub } from "./libraries/BabyJubJub.sol";
 
 contract EncryptedMembership is AppendMerkleTree {
@@ -16,8 +17,24 @@ contract EncryptedMembership is AppendMerkleTree {
     IEncryptedLoyaltyPoints public encryptedLoyaltyPoints;
 
     /// @notice The addresses of the verifiers for ZKPs
-    INewMembershipVerifier public newMembershipVerifier; // TODO: update to use interface
-    address public membershipVerifier; // TODO: update to use interface
+    INewMembershipVerifier public newMembershipVerifier; 
+    IMembershipVerifier public membershipVerifier;
+
+    ///////////////////////////////////////////////////
+    ///                   Events                    ///
+    ///////////////////////////////////////////////////
+
+    /**
+     * @notice Emitted when a new member is successfully registered with the protocol
+     * @param membershipHash the keccak256 hash of the poseidon2 hash from the membership proof
+     * @param membershipPoseidonHash the poseidon hash extracted from the membership proof 
+     * @param publicKey the derived public key of the user that was added to the membership tree
+    */
+    event newMemberAdded (
+        bytes32 membershipHash,
+        uint256 membershipPoseidonHash,
+        uint256[2] publicKey
+    );
     
     ///////////////////////////////////////////////////
     ///                   Errors                    ///
@@ -32,7 +49,7 @@ contract EncryptedMembership is AppendMerkleTree {
     // TOO: update to use interfaces for verifiers
     constructor(address _newMembershipVerifier, address _membershipVerifier) {
         newMembershipVerifier = INewMembershipVerifier(_newMembershipVerifier);
-        membershipVerifier = _membershipVerifier;
+        membershipVerifier = IMembershipVerifier(_membershipVerifier);
         _initializeMerkleTree();
     }
 
@@ -59,6 +76,12 @@ contract EncryptedMembership is AppendMerkleTree {
         // extract the leaf
         uint256 membershipHash = publicSignals[2];
 
+        // extract the public key from the proof
+        uint256[2] memory bjjPubKey = [
+            publicSignals[0], 
+            publicSignals[1]
+        ];
+
         // Hash should be less than the BN254 scalar field size
         if ( membershipHash >= BabyJubJub.Q) {
             revert invalidHash();
@@ -79,6 +102,8 @@ contract EncryptedMembership is AppendMerkleTree {
             revert invalidProof();
         }
 
+        // TO DO extract starter values for membership
+
         /*
         // extract the EGCT value
         // TODO: update for correct values
@@ -94,9 +119,14 @@ contract EncryptedMembership is AppendMerkleTree {
         }
         */
 
+               // emit the event indicating that a new membership was successfully added
+        emit newMemberAdded(transformedMembershipHash, membershipHash, bjjPubKey);
+
 
         // add the leaf to the merkle tree
         _addLeaf(transformedMembershipHash);
+
+
         
     }
 
@@ -107,7 +137,7 @@ contract EncryptedMembership is AppendMerkleTree {
      * @return isMember a boolean value indicating if the provided user is a member.
      * This function would be used to act as a gatecheck when validating a user. It would be used as a helper function for external operations such as claiming points.
      */
-    function proveMembership(uint256[] calldata membershipProof, MerkleProof calldata merkleProof) public view returns (bool isMember) {
+    function proveMembership(MembershipProof calldata membershipProof, MerkleProof calldata merkleProof) public view returns (bool isMember) {
         // validate teh membershipProof
         bool isValidMerkleProof = _validateProof(merkleProof.leafPosition, merkleProof.merkleProof, merkleProof.merkleRoot);
         
@@ -116,7 +146,18 @@ contract EncryptedMembership is AppendMerkleTree {
         }
 
         // validate the membershipProof
-        
+        bool isVerified = newMembershipVerifier.verifyProof(
+            membershipProof.proofPoints.a,
+            membershipProof.proofPoints.b,
+            membershipProof.proofPoints.c,
+            membershipProof.publicSignals
+        );
+
+        if (!isVerified) {
+            revert invalidProof();
+        }
+
+        return true;
     }
 
     /**

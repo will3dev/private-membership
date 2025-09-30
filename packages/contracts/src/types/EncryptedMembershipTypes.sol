@@ -32,7 +32,7 @@ struct NewMembershipProof {
 
 struct MembershipProof {
     ProofPoints proofPoints;
-    uint256[] publicSignals; // TODO: Update after compiling the circuit
+    uint256[3] publicSignals; // TODO: Update after compiling the circuit
 }
 
 struct ClaimPoints {

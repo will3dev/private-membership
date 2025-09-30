@@ -51,7 +51,7 @@ contract EncryptedLoyaltyPoints is IndexedMerkleTree {
      * @param balance The points balance of the user that is being added.
      * @notice this is only to be used when adding a user for the first time
      */
-    function addNewPointsBalance(bytes32 leaf, PointsBalance calldata balance) public {
+    function addNewPointsBalance(bytes32 leaf, PointsBalance calldata balance) public onlyMembershipRegistry {
         pointsBalanceLookup[leaf] = balance;
         _addLeaf(leaf);
     }

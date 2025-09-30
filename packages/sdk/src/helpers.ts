@@ -60,7 +60,7 @@ export async function scalarToEdDSASeed(sk: bigint): Promise<Uint8Array> {
     const x = ((sk % BASE_POINT_ORDER) + BASE_POINT_ORDER) % BASE_POINT_ORDER; // in [0, r-1]
     if (x === 0n) throw new Error("Invalid BJJ scalar: zero"); // zero is not allowed scalar
     const hex = x.toString(16).padStart(64, "0"); // 32 bytes
-    return eddsa.pruneBuffer(Buffer.from(hex, "hex"))
+    return await eddsa.pruneBuffer(Buffer.from(hex, "hex"))
 }
 
 
@@ -70,10 +70,10 @@ export async function signWithBJJPoseidon(
 ): Promise<BJJPoseidonSignature> {
     const seed = await scalarToEdDSASeed(sk);
     const poseidon = await buildPoseidon();
-    const m = poseidon.F.toObject(poseidon(messageFields));
+    const m = await poseidon.F.toObject(poseidon(messageFields));
 
-    const sig = eddsa.signPoseidon(seed, m);
-    const pub = eddsa.prv2pub(seed);
+    const sig = await eddsa.signPoseidon(seed, m);
+    const pub = await eddsa.prv2pub(seed);
 
     return {
         pk1: pub[0], pk2: pub[1],
@@ -96,8 +96,8 @@ export async function generateMembershipHash (
 ): Promise<MembershipHash> {
 
     // create nullifer and trapdoor, then hash together 
-    const nullifier = await toField(keccak256(Buffer.from(seed + "nullifer", "utf8")));
-    const trapdoor = await toField(keccak256(Buffer.from(seed + "trapdoor")));
+    const nullifier = await toField(keccak256(Buffer.from(seed + "nullifier", "utf8")));
+    const trapdoor = await toField(keccak256(Buffer.from(seed + "trapdoor", "utf8")));
     const hashOfIdentifiers = await poseidonHash([nullifier, trapdoor]);
 
     const formattedSecretId = await toField(keccak256(Buffer.from(secretIdSeed, 'utf8')))
@@ -141,3 +141,5 @@ export async function generateNewMembershipInput(
   
     return input;
 }
+
+

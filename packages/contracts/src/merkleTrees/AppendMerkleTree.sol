@@ -57,6 +57,7 @@ abstract contract AppendMerkleTree {
         leafLookup[leaf] = true;
         leafCount++;
 
+        // calculates a new merkle root and adds it to a history of valid roots
         _calculateNewMerkleRoot();
 
         _afterAddLeaf(leaf);
