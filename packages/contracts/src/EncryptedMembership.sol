@@ -71,7 +71,7 @@ contract EncryptedMembership is AppendMerkleTree {
      */
     function becomeMember(NewMembershipProof calldata newMembershipProof) public {
         // validate the newMembershipProof
-        uint256[3] memory publicSignals = newMembershipProof.publicSignals;
+        uint256[14] memory publicSignals = newMembershipProof.publicSignals;
         
         // extract the leaf
         uint256 membershipHash = publicSignals[2];
@@ -104,30 +104,36 @@ contract EncryptedMembership is AppendMerkleTree {
 
         // TO DO extract starter values for membership
 
-        /*
+        
         // extract the EGCT value
         // TODO: update for correct values
         EGCT memory startingPointsEGCT = EGCT({
-            c1: Point({x: publicSignals[0], y: publicSignals[1]}),
-            c2: Point({x: publicSignals[2], y: publicSignals[3]})
+            c1: Point({x: publicSignals[3], y: publicSignals[4]}),
+            c2: Point({x: publicSignals[5], y: publicSignals[6]})
         });
 
         // extract the PCT of the balance
         uint256[7] memory startingPointsPCT;
         for (uint256 i = 0; i < 7; i++) {
-            startingPointsPCT[i] = publicSignals[i + 4]; // TODO: update the number to be starting point of PCT
+            startingPointsPCT[i] = publicSignals[i + 7]; // TODO: update the number to be starting point of PCT
         }
-        */
 
-               // emit the event indicating that a new membership was successfully added
+
+        // TODO: add method for determing the starting leaf position
+        PointsBalance memory newStartingBalance = PointsBalance({
+            balancePCT: startingPointsPCT,
+            eGCT: startingPointsEGCT,
+            nonce: 0
+        });
+        
+        encryptedLoyaltyPoints.addNewPointsBalance(transformedMembershipHash, newStartingBalance);
+
+        // emit the event indicating that a new membership was successfully added
         emit newMemberAdded(transformedMembershipHash, membershipHash, bjjPubKey);
 
 
         // add the leaf to the merkle tree
         _addLeaf(transformedMembershipHash);
-
-
-        
     }
 
     /**
@@ -139,23 +145,27 @@ contract EncryptedMembership is AppendMerkleTree {
      */
     function proveMembership(MembershipProof calldata membershipProof, MerkleProof calldata merkleProof) public view returns (bool isMember) {
         // validate teh membershipProof
-        bool isValidMerkleProof = _validateProof(merkleProof.leafPosition, merkleProof.merkleProof, merkleProof.merkleRoot);
+        bool _isValidMerkleProof = _validateProof(merkleProof.leafPosition, merkleProof.merkleProof, merkleProof.merkleRoot);
         
-        if (!isValidMerkleProof) {
+        
+        if (!_isValidMerkleProof) {
             revert invalidMerkleProof();
         }
+        
 
         // validate the membershipProof
-        bool isVerified = newMembershipVerifier.verifyProof(
+        bool isVerified = membershipVerifier.verifyProof(
             membershipProof.proofPoints.a,
             membershipProof.proofPoints.b,
             membershipProof.proofPoints.c,
             membershipProof.publicSignals
         );
 
+        
         if (!isVerified) {
             revert invalidProof();
         }
+        
 
         return true;
     }

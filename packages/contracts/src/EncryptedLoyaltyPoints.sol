@@ -46,12 +46,15 @@ contract EncryptedLoyaltyPoints is IndexedMerkleTree {
     // TODO: UPDATE FUNCTIONS TO USE MEMBERSHIP REGISTRY MODIFIER
     
     /**
-     * @dev This function is used to add a new points balance for a user that is a member of the registry.
+     * @dev This function is used to add a new points balance for 
+     * a newly registered user that is being added to the registry.
      * @param leaf The leaf of the user that is being added.
      * @param balance The points balance of the user that is being added.
      * @notice this is only to be used when adding a user for the first time
      */
     function addNewPointsBalance(bytes32 leaf, PointsBalance calldata balance) public onlyMembershipRegistry {
+        // TODO: Add indexing process, need to add checks that current balance is zero
+        
         pointsBalanceLookup[leaf] = balance;
         _addLeaf(leaf);
     }

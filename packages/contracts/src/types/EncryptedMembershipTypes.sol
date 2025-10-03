@@ -27,7 +27,7 @@ struct ProofPoints {
 
 struct NewMembershipProof {
     ProofPoints proofPoints;
-    uint256[3] publicSignals;
+    uint256[14] publicSignals;
 }
 
 struct MembershipProof {

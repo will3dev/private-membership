@@ -32,6 +32,14 @@ template NewMembershipCircuit () {
     signal input MembershipHash;
     signal input NullifierHash;
 
+    signal input StartingPtsC1[2];
+    signal input StartingPtsC2[2];
+
+    signal input StartingPtsPCT[4];
+    signal input StartingPtsAuthKey[2];
+    signal input StartingPtsNonce;
+    signal input StartingPtsRandom;
+
     // Verify that the transfer amount is less than or equal to the sender's balance and is less than the base order
     var baseOrder = 2736030358979909402780800718157159386076813972158567259200215660948447373041;  
     
@@ -69,13 +77,39 @@ template NewMembershipCircuit () {
     // Constrain the computed membership hash to match the input
     computeMembershipHash.out === MembershipHash;
 
-    // TO DO: Verify that the eddsa signature over the poseidon hash is well-formed
+    // The default amount that is used for starting the user's loyalty point balance
+    var startingAmount = 2;
+
+    // Verify that the encrypted starting amount is the starting amount
+    component checkStartingPts = CheckValue();
+    checkStartingPts.value <== startingAmount;
+    checkStartingPts.privKey <== SenderPrivateKey;
+    checkStartingPts.valueC1[0] <== StartingPtsC1[0];
+    checkStartingPts.valueC1[1] <== StartingPtsC1[1];
+    checkStartingPts.valueC2[0] <== StartingPtsC2[0];
+    checkStartingPts.valueC2[1] <== StartingPtsC2[1];
+
+    // Verify that the PCT starting amount is the starting amount
+    component checkStartingPCT = CheckPCT();
+    checkStartingPCT.publicKey[0] <== SenderPublicKey[0];
+    checkStartingPCT.publicKey[1] <== SenderPublicKey[1];
+    checkStartingPCT.pct <== StartingPtsPCT;
+    checkStartingPCT.authKey[0] <== StartingPtsAuthKey[0];
+    checkStartingPCT.authKey[1] <== StartingPtsAuthKey[1];
+    checkStartingPCT.nonce <== StartingPtsNonce;
+    checkStartingPCT.random <== StartingPtsRandom;
+    checkStartingPCT.value <== startingAmount;
 
 }
 
 component main { public[ 
     SenderPublicKey, //0-1
-    MembershipHash //2
+    MembershipHash, //2
+    StartingPtsC1, // 3-4
+    StartingPtsC2, // 5-6
+    StartingPtsPCT, // 7-10
+    StartingPtsAuthKey, // 11-12
+    StartingPtsNonce // 13
 ]} = NewMembershipCircuit();
 
 

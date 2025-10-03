@@ -8,7 +8,7 @@ import { generateMembershipHash, getPrivateKeyFromSignature, formatKeyForCurve, 
 import { Base8, mulPointEscalar, subOrder } from "@zk-kit/baby-jubjub";
 import { createWalletClient, http, keccak256, stringToHex, concatHex } from "viem";
 import { mainnet } from "viem/chains";
-import { generateMembershipProof, FormattedMembershipProof } from "./helpers";
+import { generateMembershipProof, generateNewMembershipProof, FormattedMembershipProof, FormattedNewMembershipProof } from "./helpers";
 import { groth16 } from "snarkjs"
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -67,7 +67,7 @@ describe("Encrypted Membership", function () {
 
         await newMembershipVerifierContract.waitForDeployment();
         const newMembershipVerifierAddress = await newMembershipVerifierContract.getAddress();
-        console.log("New Membership Verifier Address:", newMembershipVerifierAddress);
+        // console.log("New Membership Verifier Address:", newMembershipVerifierAddress);
 
         // TO DO: add deployment for MembershipVerifier
 
@@ -82,8 +82,8 @@ describe("Encrypted Membership", function () {
         });
 
         await membershipVerifierContract.waitForDeployment();
-        const membershipVerifierAddress = await newMembershipVerifierContract.getAddress();
-        console.log("Membership Verifier Address:", newMembershipVerifierAddress);
+        const membershipVerifierAddress = await membershipVerifierContract.getAddress();
+        // console.log("Membership Verifier Address:", newMembershipVerifierAddress);
 
 
         // Set up to deploy the membership contract
@@ -118,7 +118,7 @@ describe("Encrypted Membership", function () {
             }
         );
         await loyaltyPointsContract.waitForDeployment();
-        console.log("Loyalty Points Contract Address:", await loyaltyPointsContract.getAddress()); 
+        //console.log("Loyalty Points Contract Address:", await loyaltyPointsContract.getAddress()); 
 
     })
 
@@ -182,7 +182,7 @@ describe("Encrypted Membership", function () {
             )
 
             // 4. Generate the proof
-            const newMembershipProofInputs: FormattedMembershipProof = await generateMembershipProof(
+            const newMembershipProofInputs: FormattedNewMembershipProof = await generateNewMembershipProof(
                 formattedKey,
                 [BigInt(publicKey[0]), BigInt(publicKey[1])],
                 membershipHash.hash,
@@ -198,7 +198,6 @@ describe("Encrypted Membership", function () {
                 const becomeMemberReceipt = await tx.wait();
                 // TO DO: listen for event emited from contract
                 for (const log of becomeMemberReceipt.logs) {
-                    console.log(log);
                     try {
                         const parsedLog = membershipContract.interface.parseLog(log);
                         if (parsedLog.name === "newMemberAdded") {
@@ -208,14 +207,14 @@ describe("Encrypted Membership", function () {
                                 poseidonLeafHash: eventData[1],
                                 publicKey: [eventData[2][0], eventData[2][1]]
                             })
-                            console.log(newMemberDetails);
+                            //console.log(newMemberDetails);
                             break;
                         }
                     } catch (e) {
                         // TO DO: Add some skip logic here
                     }
                 }
-                console.log("Transaction successful:", tx);
+                
             } catch (error) {
                 console.error("Transaction failed:", error);
                 console.error("Full error:", JSON.stringify(error, null, 2));
@@ -237,6 +236,7 @@ describe("Encrypted Membership", function () {
     it("should prove that user is a member", async function () {
         // 1. generate membership proof inputs
         const user: User = allUsers[0];
+        console.log("USER DETAILS: ", user);
 
         // 2. generate membership proof
         const membershipProof: FormattedMembershipProof = await generateMembershipProof(
@@ -269,9 +269,24 @@ describe("Encrypted Membership", function () {
             merkleRoot: merkleRoot
         }
 
+        console.log("MEMBERSHIP PROOF: ", membershipProof);
+        console.log("MERKLE PROOF: ", fullProof);
+
         // 4. submit the transaction to the chain
-        const isValidMember = await membershipContract.proveMembership(membershipProof, fullProof);
-        expect(isValidMember).toEqual(true);
+         // Try to decode the error
+         try {
+            const isValidMember = await membershipContract.proveMembership(membershipProof, fullProof);
+            expect(isValidMember).toEqual(true);
+        } catch (error) {
+            console.error("Transaction failed:", error);
+            console.error("Error data:", error.data);
+            console.error("Error reason:", error.reason);
+            
+            // Try to decode the error
+            console.error("Full error:", JSON.stringify(error, (key, value) => 
+                typeof value === 'bigint' ? value.toString() : value, 2));
+            throw error;
+        }
 
 
     });
@@ -366,8 +381,8 @@ describe("Encrypted Membership", function () {
             MembershipSecretId: "8374048968350182018746935460606870168568310966512287010372036189095328352003"
           }
         
-        const wasmPath = join(__dirname, "../../circuits/newMembership/newMembership_js/newMembership.wasm");
-        const zkeyPath = join(__dirname, "../../circuits/newMembership/newMembership_final.zkey");
+        const wasmPath = join(__dirname, "../../circuits/membership/proveMembership_js/proveMembership.wasm");
+        const zkeyPath = join(__dirname, "../../circuits/membership/proveMembership_final.zkey");
 
         const { proof, publicSignals } = await groth16.fullProve(
             inputs,
